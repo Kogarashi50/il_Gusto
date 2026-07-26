@@ -1,0 +1,13 @@
+packages:
+  - .
+
+overrides:
+  hono: 4.12.25
+
+ignoredBuiltDependencies:
+  - msw
+  - unrs-resolver
+
+allowBuilds:
+  msw: set this to true or false
+  unrs-resolver: set this to true or false
