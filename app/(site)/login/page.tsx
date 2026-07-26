@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { InfoCard } from '@/components/info-card'
 import { LoginForm } from '@/components/login-form'
@@ -42,10 +42,10 @@ export default function LoginPage() {
           </div>
           <Button
             variant="outline"
-            render={<Link href="/screens" />}
+            render={<Link href="/dashboard" />}
             className="mt-2 h-10 w-fit px-5"
           >
-            View all screens
+            Open back office
           </Button>
         </InfoCard>
       </section>
