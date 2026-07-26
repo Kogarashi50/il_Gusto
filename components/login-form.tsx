@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -26,7 +26,7 @@ export function LoginForm() {
       'il-gusto-demo-session',
       JSON.stringify({ email, signedInAt: new Date().toISOString() }),
     )
-    router.push('/screens')
+    router.push('/dashboard')
   }
 
   return (
