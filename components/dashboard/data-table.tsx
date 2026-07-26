@@ -1,7 +1,7 @@
 'use client'
 
 import { type ReactNode, useMemo, useState } from 'react'
-import { BellIcon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from 'lucide-react'
+import { PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export type Column<T> = {
@@ -13,14 +13,60 @@ export type Column<T> = {
 
 type DataTableProps<T> = {
   title: string
+  subtitle?: string
   columns: Column<T>[]
   rows: T[]
   searchKeys: (keyof T)[]
   searchPlaceholder?: string
 }
 
+const STATUS_TONES: Record<string, string> = {
+  active: 'positive',
+  confirmed: 'positive',
+  delivered: 'positive',
+  'paid online': 'positive',
+  pending: 'warning',
+  'on the way': 'warning',
+  'on leave': 'warning',
+  card: 'warning',
+  'cash on delivery': 'warning',
+  ended: 'negative',
+  cancelled: 'negative',
+  canceled: 'negative',
+}
+
+function StatusBadge({ value }: { value: string }) {
+  const tone = STATUS_TONES[value.toLowerCase()] ?? 'neutral'
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
+        tone === 'positive' &&
+          'border-accent/30 bg-accent/12 text-accent',
+        tone === 'warning' &&
+          'border-primary/25 bg-secondary text-secondary-foreground',
+        tone === 'negative' &&
+          'border-destructive/25 bg-destructive/10 text-destructive',
+        tone === 'neutral' && 'border-border bg-muted text-muted-foreground',
+      )}
+    >
+      <span
+        className={cn(
+          'size-1.5 rounded-full',
+          tone === 'positive' && 'bg-accent',
+          tone === 'warning' && 'bg-primary/60',
+          tone === 'negative' && 'bg-destructive',
+          tone === 'neutral' && 'bg-muted-foreground/50',
+        )}
+      />
+      {value}
+    </span>
+  )
+}
+
 export function DataTable<T extends Record<string, unknown>>({
   title,
+  subtitle,
   columns,
   rows,
   searchKeys,
@@ -32,96 +78,113 @@ export function DataTable<T extends Record<string, unknown>>({
     const q = query.trim().toLowerCase()
     if (!q) return rows
     return rows.filter((row) =>
-      searchKeys.some((key) => String(row[key] ?? '').toLowerCase().includes(q)),
+      searchKeys.some((key) =>
+        String(row[key] ?? '')
+          .toLowerCase()
+          .includes(q),
+      ),
     )
   }, [query, rows, searchKeys])
 
-  const gridTemplate = { gridTemplateColumns: `repeat(${columns.length}, minmax(7rem, 1fr))` }
-
   return (
     <section className="flex flex-col gap-6">
-      <h1 className="text-center font-serif text-4xl text-primary-foreground sm:text-5xl">
-        {title}
-      </h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow">
+            {subtitle ?? `${filtered.length} of ${rows.length} records`}
+          </p>
+          <h1 className="mt-2 font-serif text-4xl leading-none text-balance sm:text-5xl">
+            {title}
+          </h1>
+        </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-2">
           <ToolbarButton label="Add row" disabled>
             <PlusIcon className="size-4" />
           </ToolbarButton>
-          <ToolbarButton label="Delete row" disabled>
-            <Trash2Icon className="size-4" />
-          </ToolbarButton>
           <ToolbarButton label="Edit row" disabled>
             <PencilIcon className="size-4" />
           </ToolbarButton>
+          <ToolbarButton label="Delete row" disabled>
+            <Trash2Icon className="size-4" />
+          </ToolbarButton>
         </div>
-
-        <label className="relative flex-1 sm:max-w-xs">
-          <span className="sr-only">Search {title}</span>
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-10 w-full rounded-full border border-sidebar-border bg-card/70 pl-9 pr-4 text-sm text-foreground outline-none ring-ring/40 backdrop-blur placeholder:text-muted-foreground focus:ring-2"
-          />
-        </label>
-
-        <button
-          type="button"
-          className="flex size-9 items-center justify-center rounded-full text-foreground/70 transition-colors hover:text-foreground"
-          aria-label="Notifications"
-        >
-          <BellIcon className="size-5" />
-        </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="min-w-[46rem]">
-          <div
-            className="grid gap-x-4 border-b border-foreground/25 pb-3"
-            style={gridTemplate}
-          >
-            {columns.map((column) => (
-              <div
-                key={column.key}
-                className={cn(
-                  'px-2 text-center font-serif text-base uppercase tracking-wide text-primary-foreground sm:text-lg',
-                  column.className,
-                )}
-              >
-                {column.label}
-              </div>
-            ))}
-          </div>
+      <label className="relative w-full sm:max-w-sm">
+        <span className="sr-only">Search {title}</span>
+        <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={searchPlaceholder}
+          className="h-11 w-full rounded-full border border-border bg-card pl-10 pr-4 text-sm text-foreground outline-none ring-ring/40 placeholder:text-muted-foreground focus:border-accent focus:ring-2"
+        />
+      </label>
 
-          <div className="mt-4 flex flex-col gap-2.5">
-            {filtered.length === 0 ? (
-              <p className="py-10 text-center text-sm text-primary-foreground/80">
-                No matching records.
-              </p>
-            ) : (
-              filtered.map((row, index) => (
-                <div
-                  key={String(row.id ?? index)}
-                  className="grid items-center gap-x-4"
-                  style={gridTemplate}
-                >
-                  {columns.map((column) => (
-                    <div
-                      key={column.key}
-                      className="flex min-h-9 items-center justify-center rounded-full bg-dash-pill px-3 py-1.5 text-center text-xs text-dash-pill-foreground sm:text-sm"
-                    >
-                      <span className="truncate">
-                        {column.render ? column.render(row) : String(row[column.key] ?? '')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))
-            )}
-          </div>
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[46rem] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                {columns.map((column) => (
+                  <th
+                    key={column.key}
+                    scope="col"
+                    className={cn(
+                      'px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground',
+                      column.className,
+                    )}
+                  >
+                    {column.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="px-5 py-16 text-center text-sm text-muted-foreground"
+                  >
+                    No matching records.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((row, index) => (
+                  <tr
+                    key={String(row.id ?? index)}
+                    className="border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/40"
+                  >
+                    {columns.map((column) => {
+                      const content = column.render
+                        ? column.render(row)
+                        : String(row[column.key] ?? '')
+
+                      return (
+                        <td
+                          key={column.key}
+                          className="px-5 py-4 align-middle text-foreground"
+                        >
+                          {column.key === 'status' &&
+                          typeof content === 'string' ? (
+                            <StatusBadge value={content} />
+                          ) : column.key === 'id' ? (
+                            <span className="font-mono text-xs tracking-wide text-muted-foreground">
+                              {content}
+                            </span>
+                          ) : (
+                            content
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -143,7 +206,7 @@ function ToolbarButton({
       aria-label={label}
       title={label}
       disabled={disabled}
-      className="flex size-9 items-center justify-center rounded-full bg-sidebar text-sidebar-foreground transition-opacity disabled:cursor-not-allowed disabled:opacity-70"
+      className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-border disabled:hover:text-foreground"
     >
       {children}
     </button>
